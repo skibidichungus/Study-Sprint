@@ -3,38 +3,65 @@
 import { FormEvent, useEffect, useState } from "react";
 import type { Task } from "@/types/task";
 
-const initialTasks: Task[] = [
-  { id: 1, title: "Review notes for math", completed: false },
-  { id: 2, title: "Read 10 pages of history", completed: false }
-];
-const taskStorageKey = "studysprint-tasks";
+type TasksResponse = {
+  tasks: Task[];
+};
+
+type TaskResponse = {
+  task: Task;
+};
+
+type ApiErrorResponse = {
+  error?: string;
+};
+
+const getApiErrorMessage = (data: unknown, fallback: string) => {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "error" in data &&
+    typeof data.error === "string"
+  ) {
+    return data.error;
+  }
+
+  return fallback;
+};
 
 export default function TaskList() {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    if (typeof window === "undefined") {
-      return initialTasks;
-    }
-
-    const storedTasks = localStorage.getItem(taskStorageKey);
-
-    if (!storedTasks) {
-      return initialTasks;
-    }
-
-    try {
-      return JSON.parse(storedTasks) as Task[];
-    } catch {
-      return initialTasks;
-    }
-  });
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
-  }, [tasks]);
+    const loadTasks = async () => {
+      try {
+        setErrorMessage(null);
+        const response = await fetch("/api/tasks");
+        const data = (await response.json()) as unknown;
 
-  const addTask = (event: FormEvent<HTMLFormElement>) => {
+        if (!response.ok) {
+          throw new Error(getApiErrorMessage(data, "Failed to load tasks."));
+        }
+
+        setTasks((data as TasksResponse).tasks);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load tasks.";
+        setErrorMessage(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, []);
+
+  const addTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = newTask.trim();
 
@@ -42,23 +69,58 @@ export default function TaskList() {
       return;
     }
 
-    setTasks((currentTasks) => [
-      ...currentTasks,
-      {
-        id: Date.now(),
-        title: trimmed,
-        completed: false
+    try {
+      setIsCreating(true);
+      setErrorMessage(null);
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title: trimmed })
+      });
+      const data = (await response.json()) as unknown;
+
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(data, "Failed to create task."));
       }
-    ]);
-    setNewTask("");
+
+      setTasks((currentTasks) => [...currentTasks, (data as TaskResponse).task]);
+      setNewTask("");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create task.";
+      setErrorMessage(message);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const toggleTaskComplete = (id: number) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const completeTask = async (id: number) => {
+    try {
+      setUpdatingTaskId(id);
+      setErrorMessage(null);
+      const response = await fetch(`/api/tasks/${id}/complete`, {
+        method: "PATCH"
+      });
+      const data = (await response.json()) as unknown;
+
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(data, "Failed to complete task."));
+      }
+
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === id ? (data as TaskResponse).task : task
+        )
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to complete task.";
+      setErrorMessage(message);
+    } finally {
+      setUpdatingTaskId(null);
+    }
   };
 
   const visibleTasks = tasks.filter((task) => {
@@ -104,8 +166,11 @@ export default function TaskList() {
             onChange={(event) => setNewTask(event.target.value)}
             placeholder="Add a study task..."
             aria-label="Task title"
+            disabled={isCreating}
           />
-          <button type="submit">Add</button>
+          <button type="submit" disabled={isCreating}>
+            {isCreating ? "Adding..." : "Add"}
+          </button>
         </form>
       </section>
 
@@ -138,6 +203,8 @@ export default function TaskList() {
 
       <section className="task-card">
         <h2>Task List</h2>
+        {isLoading && <p className="empty-state">Loading tasks...</p>}
+        {errorMessage && <p className="empty-state">{errorMessage}</p>}
         <ul className="task-list">
           {visibleTasks.map((task) => (
             <li key={task.id} className="task-item">
@@ -145,14 +212,19 @@ export default function TaskList() {
                 <input
                   type="checkbox"
                   checked={task.completed}
-                  onChange={() => toggleTaskComplete(task.id)}
+                  disabled={task.completed || updatingTaskId === task.id}
+                  onChange={(event) => {
+                    if (event.target.checked) {
+                      void completeTask(task.id);
+                    }
+                  }}
                 />
                 <span className={task.completed ? "done" : ""}>{task.title}</span>
               </label>
             </li>
           ))}
         </ul>
-        {visibleTasks.length === 0 && (
+        {!isLoading && visibleTasks.length === 0 && (
           <p className="empty-state">No tasks in this filter yet.</p>
         )}
       </section>
