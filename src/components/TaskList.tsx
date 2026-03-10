@@ -11,6 +11,7 @@ const initialTasks: Task[] = [
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [newTask, setNewTask] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
   const addTask = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -39,33 +40,81 @@ export default function TaskList() {
     );
   };
 
-  return (
-    <section className="task-card">
-      <form className="task-form" onSubmit={addTask}>
-        <input
-          type="text"
-          value={newTask}
-          onChange={(event) => setNewTask(event.target.value)}
-          placeholder="Add a study task..."
-          aria-label="Task title"
-        />
-        <button type="submit">Add</button>
-      </form>
+  const visibleTasks = tasks.filter((task) => {
+    if (filter === "active") {
+      return !task.completed;
+    }
 
-      <ul className="task-list">
-        {tasks.map((task) => (
-          <li key={task.id} className="task-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={task.completed}
-                onChange={() => toggleTaskComplete(task.id)}
-              />
-              <span className={task.completed ? "done" : ""}>{task.title}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
+    if (filter === "completed") {
+      return task.completed;
+    }
+
+    return true;
+  });
+
+  return (
+    <section className="dashboard-sections">
+      <section className="task-card">
+        <h2>Add Task</h2>
+        <form className="task-form" onSubmit={addTask}>
+          <input
+            type="text"
+            value={newTask}
+            onChange={(event) => setNewTask(event.target.value)}
+            placeholder="Add a study task..."
+            aria-label="Task title"
+          />
+          <button type="submit">Add</button>
+        </form>
+      </section>
+
+      <section className="task-card">
+        <h2>Filter</h2>
+        <div className="filter-row">
+          <button
+            type="button"
+            className={filter === "all" ? "filter-btn active" : "filter-btn"}
+            onClick={() => setFilter("all")}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            className={filter === "active" ? "filter-btn active" : "filter-btn"}
+            onClick={() => setFilter("active")}
+          >
+            Active
+          </button>
+          <button
+            type="button"
+            className={filter === "completed" ? "filter-btn active" : "filter-btn"}
+            onClick={() => setFilter("completed")}
+          >
+            Completed
+          </button>
+        </div>
+      </section>
+
+      <section className="task-card">
+        <h2>Task List</h2>
+        <ul className="task-list">
+          {visibleTasks.map((task) => (
+            <li key={task.id} className="task-item">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => toggleTaskComplete(task.id)}
+                />
+                <span className={task.completed ? "done" : ""}>{task.title}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+        {visibleTasks.length === 0 && (
+          <p className="empty-state">No tasks in this filter yet.</p>
+        )}
+      </section>
     </section>
   );
 }
