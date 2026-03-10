@@ -13,18 +13,9 @@ body {
 }
 
 .container {
-  max-width: 680px;
-  margin: 48px auto;
+  max-width: 760px;
+  margin: 28px auto 48px;
   padding: 0 16px;
-}
-
-h1 {
-  margin-bottom: 8px;
-}
-
-p {
-  margin-top: 0;
-  margin-bottom: 20px;
 }
 
 .task-card {
@@ -34,10 +25,14 @@ p {
   padding: 16px;
 }
 
+.task-card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
 .task-form {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
 }
 
 .task-form input {
@@ -75,4 +70,73 @@ p {
 .done {
   text-decoration: line-through;
   color: #6b7280;
+}
+
+.top-nav {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+}
+
+.top-nav-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.top-nav-inner strong {
+  font-size: 18px;
+}
+
+.top-nav-inner span {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px;
+}
+
+.page-header p {
+  margin: 0;
+  color: #475569;
+}
+
+.dashboard-sections {
+  display: grid;
+  gap: 14px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-btn.active {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.empty-state {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: #64748b;
 }
