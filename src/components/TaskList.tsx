@@ -1,17 +1,38 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import type { Task } from "@/types/task";
 
 const initialTasks: Task[] = [
   { id: 1, title: "Review notes for math", completed: false },
   { id: 2, title: "Read 10 pages of history", completed: false }
 ];
+const taskStorageKey = "studysprint-tasks";
 
 export default function TaskList() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window === "undefined") {
+      return initialTasks;
+    }
+
+    const storedTasks = localStorage.getItem(taskStorageKey);
+
+    if (!storedTasks) {
+      return initialTasks;
+    }
+
+    try {
+      return JSON.parse(storedTasks) as Task[];
+    } catch {
+      return initialTasks;
+    }
+  });
   const [newTask, setNewTask] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+
+  useEffect(() => {
+    localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
+  }, [tasks]);
 
   const addTask = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,9 +72,29 @@ export default function TaskList() {
 
     return true;
   });
+  const completedCount = tasks.filter((task) => task.completed).length;
+  const activeCount = tasks.length - completedCount;
 
   return (
     <section className="dashboard-sections">
+      <section className="task-card">
+        <h2>Task Summary</h2>
+        <div className="summary-grid">
+          <article className="summary-item">
+            <p className="summary-label">Total</p>
+            <p className="summary-value">{tasks.length}</p>
+          </article>
+          <article className="summary-item">
+            <p className="summary-label">Active</p>
+            <p className="summary-value">{activeCount}</p>
+          </article>
+          <article className="summary-item">
+            <p className="summary-label">Completed</p>
+            <p className="summary-value">{completedCount}</p>
+          </article>
+        </div>
+      </section>
+
       <section className="task-card">
         <h2>Add Task</h2>
         <form className="task-form" onSubmit={addTask}>

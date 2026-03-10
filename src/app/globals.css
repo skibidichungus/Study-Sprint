@@ -115,6 +115,31 @@ body {
   gap: 14px;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summary-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.summary-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.summary-value {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
 .filter-row {
   display: flex;
   gap: 8px;
