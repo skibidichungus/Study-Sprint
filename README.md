@@ -145,7 +145,7 @@ Not found response (`404`) shape:
   "error": "Task not found."
 }
 ```
-## Future Features
 
-- Delete
-- Undo
+## Future Work/Features
+
+- Delete & Undo
